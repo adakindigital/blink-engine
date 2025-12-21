@@ -23,6 +23,8 @@ model User {
   name             String
   surname          String
   phoneNumber      String?
+  profileImageUrl  String?
+  isPremium        Boolean   @default(false)
   isPhoneValidated Boolean   @default(false)
   isEmailValidated Boolean   @default(false)
   createdAt        DateTime  @default(now())

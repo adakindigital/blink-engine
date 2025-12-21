@@ -78,3 +78,51 @@ export const updateProfile = async (
         next(error);
     }
 };
+
+/**
+ * POST /v1/users/profile/image
+ * Upload profile image
+ */
+export const uploadProfileImage = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const userId = req.userId!;
+        const file = req.file;
+
+        if (!file) {
+            res.status(400).json({
+                error: {
+                    code: 'MISSING_FILE',
+                    message: 'No image file provided',
+                    retryable: false,
+                },
+            });
+            return;
+        }
+
+        const result = await userService.uploadProfileImage(
+            userId,
+            file.buffer,
+            file.mimetype,
+            file.originalname
+        );
+
+        if (!result.success) {
+            throw result.error;
+        }
+
+        logger.info('Profile image uploaded', {
+            correlationId: req.correlationId,
+            userId,
+            url: result.data.profileImageUrl,
+        });
+
+        res.json({ data: result.data });
+    } catch (error) {
+        next(error);
+    }
+};
+
