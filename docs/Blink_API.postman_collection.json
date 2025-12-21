@@ -1,0 +1,770 @@
+{
+    "info": {
+        "_postman_id": "blink-api-collection-v1",
+        "name": "Blink API",
+        "description": "Blink Engine API Collection - Safety-critical backend for Blink mobile clients.\n\nBase URL: {{base_url}}/api/v1\n\nAll endpoints return responses in the format:\n- Success: { \"data\": ... }\n- Error: { \"code\": \"string\", \"message\": \"string\", \"details\": \"optional\", \"retryable\": boolean }",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000",
+            "type": "string"
+        },
+        {
+            "key": "access_token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "refresh_token",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth",
+            "description": "Authentication endpoints - register, login, token refresh, logout",
+            "item": [
+                {
+                    "name": "Register",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\",\n    \"name\": \"John\",\n    \"surname\": \"Doe\",\n    \"phoneNumber\": \"+1234567890\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/auth/register",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "auth",
+                                "register"
+                            ]
+                        },
+                        "description": "Register a new user account.\n\nRequired fields:\n- email: Valid email address\n- password: Minimum 8 characters\n- name: User's first name\n- surname: User's surname\n\nOptional fields:\n- phoneNumber: Phone number"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    if (response.data && response.data.accessToken) {",
+                                    "        pm.collectionVariables.set('access_token', response.data.accessToken);",
+                                    "        pm.collectionVariables.set('refresh_token', response.data.refreshToken);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Authenticate user and receive access/refresh tokens.\n\nReturns:\n- user: User object\n- accessToken: Short-lived JWT for API calls\n- refreshToken: Long-lived token for refreshing access"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Refresh Token",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    if (response.data && response.data.accessToken) {",
+                                    "        pm.collectionVariables.set('access_token', response.data.accessToken);",
+                                    "        pm.collectionVariables.set('refresh_token', response.data.refreshToken);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"refreshToken\": \"{{refresh_token}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/auth/refresh",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "auth",
+                                "refresh"
+                            ]
+                        },
+                        "description": "Refresh access token using a valid refresh token.\n\nReturns new access and refresh token pair."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/auth/logout",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "auth",
+                                "logout"
+                            ]
+                        },
+                        "description": "Revoke refresh token and log out user.\n\nRequires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Current User",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/auth/me",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "auth",
+                                "me"
+                            ]
+                        },
+                        "description": "Get the currently authenticated user's information.\n\nRequires authentication."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Users",
+            "description": "User profile management endpoints",
+            "item": [
+                {
+                    "name": "Get Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/users/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "users",
+                                "profile"
+                            ]
+                        },
+                        "description": "Get the current user's profile.\n\nRequires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Profile",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"John\",\n    \"surname\": \"Smith\",\n    \"phoneNumber\": \"+1234567890\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/users/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "users",
+                                "profile"
+                            ]
+                        },
+                        "description": "Update the current user's profile.\n\nAll fields are optional:\n- name: First name\n- surname: Last name\n- phoneNumber: Phone number\n\nRequires authentication."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Contacts",
+            "description": "Emergency contact management endpoints",
+            "item": [
+                {
+                    "name": "List Contacts",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/contacts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "contacts"
+                            ]
+                        },
+                        "description": "List all emergency contacts for the current user.\n\nRequires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Contact",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Emergency Contact\",\n    \"phoneNumber\": \"+1234567890\",\n    \"email\": \"contact@example.com\",\n    \"isPrimary\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/contacts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "contacts"
+                            ]
+                        },
+                        "description": "Create a new emergency contact.\n\nRequired fields:\n- name: Contact name\n- phoneNumber: Contact phone number\n\nOptional fields:\n- email: Contact email\n- isPrimary: Set as primary contact (default: false)\n\nRequires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Contact",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/contacts/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "contacts",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "contact_id_here"
+                                }
+                            ]
+                        },
+                        "description": "Get a specific emergency contact by ID.\n\nRequires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Contact",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Updated Name\",\n    \"phoneNumber\": \"+0987654321\",\n    \"email\": \"updated@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/contacts/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "contacts",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "contact_id_here"
+                                }
+                            ]
+                        },
+                        "description": "Update an emergency contact.\n\nAll fields are optional:\n- name: Contact name\n- phoneNumber: Contact phone number\n- email: Contact email\n\nRequires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Contact",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/contacts/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "contacts",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "contact_id_here"
+                                }
+                            ]
+                        },
+                        "description": "Delete an emergency contact.\n\nRequires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Set Primary Contact",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/contacts/:id/set-primary",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "contacts",
+                                ":id",
+                                "set-primary"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "contact_id_here"
+                                }
+                            ]
+                        },
+                        "description": "Set a contact as the primary emergency contact.\n\nRequires authentication."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Locations",
+            "description": "Location tracking endpoints",
+            "item": [
+                {
+                    "name": "Record Location",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"latitude\": -33.9249,\n    \"longitude\": 18.4241,\n    \"accuracy\": 10.5,\n    \"altitude\": 50.0,\n    \"speed\": 0.0,\n    \"heading\": 180.0,\n    \"timestamp\": \"2024-12-19T15:00:00.000Z\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/locations",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "locations"
+                            ]
+                        },
+                        "description": "Record a single location point.\n\nRequired fields:\n- latitude: -90 to 90\n- longitude: -180 to 180\n- timestamp: ISO datetime string\n\nOptional fields:\n- accuracy: Position accuracy in meters\n- altitude: Altitude in meters\n- speed: Speed in m/s\n- heading: Heading in degrees (0-360)\n\nRequires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Record Batch Locations",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "[\n    {\n        \"latitude\": -33.9249,\n        \"longitude\": 18.4241,\n        \"accuracy\": 10.5,\n        \"timestamp\": \"2024-12-19T15:00:00.000Z\"\n    },\n    {\n        \"latitude\": -33.9250,\n        \"longitude\": 18.4242,\n        \"accuracy\": 8.0,\n        \"timestamp\": \"2024-12-19T15:01:00.000Z\"\n    }\n]"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/locations/batch",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "locations",
+                                "batch"
+                            ]
+                        },
+                        "description": "Record multiple location points in a single request.\n\nUseful for syncing offline-recorded locations.\n\nRequires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Location History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/locations/history?from=2024-12-01T00:00:00.000Z&to=2024-12-31T23:59:59.999Z&limit=100",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "locations",
+                                "history"
+                            ],
+                            "query": [
+                                {
+                                    "key": "from",
+                                    "value": "2024-12-01T00:00:00.000Z",
+                                    "description": "Start date (ISO datetime)"
+                                },
+                                {
+                                    "key": "to",
+                                    "value": "2024-12-31T23:59:59.999Z",
+                                    "description": "End date (ISO datetime)"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "100",
+                                    "description": "Max results (1-1000, default: 100)"
+                                }
+                            ]
+                        },
+                        "description": "Get location history for the current user.\n\nQuery parameters:\n- from: Start datetime (optional)\n- to: End datetime (optional)\n- limit: Max results 1-1000 (default: 100)\n\nRequires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Latest Location",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/locations/latest",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "locations",
+                                "latest"
+                            ]
+                        },
+                        "description": "Get the most recent location for the current user.\n\nRequires authentication."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "SOS",
+            "description": "Safety-critical SOS endpoints - highest priority",
+            "item": [
+                {
+                    "name": "Trigger SOS",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"latitude\": -33.9249,\n    \"longitude\": 18.4241,\n    \"idempotencyKey\": \"{{$guid}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/sos/trigger",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "sos",
+                                "trigger"
+                            ]
+                        },
+                        "description": "**SAFETY CRITICAL** - Trigger an SOS emergency event.\n\nThis operation is idempotent - multiple calls with the same idempotencyKey return the same result.\n\nRequired fields:\n- latitude: Current latitude (-90 to 90)\n- longitude: Current longitude (-180 to 180)\n\nOptional fields:\n- idempotencyKey: UUID for idempotent retries\n\nRequires authentication.\n\nThis endpoint:\n- Notifies all emergency contacts\n- Starts location tracking\n- Creates audit log entry"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Cancel SOS",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"reason\": \"False alarm - accidentally triggered\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/sos/cancel",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "sos",
+                                "cancel"
+                            ]
+                        },
+                        "description": "**SAFETY CRITICAL** - Cancel an active SOS event.\n\nOptional fields:\n- reason: Reason for cancellation\n\nRequires authentication.\n\nThis endpoint:\n- Notifies emergency contacts of cancellation\n- Stops active location sharing\n- Creates audit log entry"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Resolve SOS",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/sos/resolve",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "sos",
+                                "resolve"
+                            ]
+                        },
+                        "description": "**SAFETY CRITICAL** - Resolve an SOS event (user is safe).\n\nRequires authentication.\n\nThis endpoint:\n- Notifies emergency contacts that user is safe\n- Stops active location sharing\n- Creates audit log entry"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Active SOS",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/sos/active",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "sos",
+                                "active"
+                            ]
+                        },
+                        "description": "Get the currently active SOS event for the authenticated user.\n\nReturns null if no active SOS.\n\nRequires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get SOS History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/sos/history",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "sos",
+                                "history"
+                            ]
+                        },
+                        "description": "Get SOS event history for the authenticated user.\n\nRequires authentication."
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

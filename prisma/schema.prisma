@@ -1,0 +1,157 @@
+// =============================================================================
+// Blink Engine - Prisma Schema
+// =============================================================================
+// This is your Prisma schema file. Learn more at: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// User & Authentication
+// =============================================================================
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  passwordHash     String
+  name             String
+  surname          String
+  phoneNumber      String?
+  isPhoneValidated Boolean   @default(false)
+  isEmailValidated Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  refreshTokens RefreshToken[]
+  contacts      Contact[]
+  locations     Location[]
+  sosEvents     SosEvent[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revoked   Boolean  @default(false)
+  family    String   // Token family for rotation tracking
+
+  @@index([token])
+  @@index([userId])
+  @@index([family])
+  @@map("refresh_tokens")
+}
+
+// =============================================================================
+// Emergency Contacts
+// =============================================================================
+
+/// Contact status enumeration
+/// - pending: Invitation sent, waiting for response
+/// - accepted: Contact has accepted the invitation
+/// - declined: Contact has declined the invitation
+model Contact {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  phoneNumber String
+  email       String?
+  isPrimary   Boolean  @default(false)
+  status      String   @default("pending") // pending, accepted, declined
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("contacts")
+}
+
+// =============================================================================
+// Location Tracking
+// =============================================================================
+
+model Location {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  latitude  Float
+  longitude Float
+  accuracy  Float?
+  altitude  Float?
+  speed     Float?
+  heading   Float?
+  timestamp DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([userId, timestamp])
+  @@map("locations")
+}
+
+// =============================================================================
+// SOS Events (Safety-Critical)
+// =============================================================================
+
+/// SOS Event status enumeration
+/// - active: SOS is currently active, contacts being notified
+/// - resolved: SOS was resolved (user confirmed safety)
+/// - cancelled: SOS was cancelled by user
+/// - expired: SOS expired without resolution
+model SosEvent {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  triggeredAt      DateTime
+  cancelledAt      DateTime?
+  resolvedAt       DateTime?
+  latitude         Float
+  longitude        Float
+  status           String    @default("active") // active, resolved, cancelled, expired
+  notifiedContacts Json?     // Array of contact IDs that were notified
+  auditLog         Json?     // Audit trail of all actions
+  idempotencyKey   String?   @unique // For idempotent triggers
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
+  @@index([triggeredAt])
+  @@map("sos_events")
+}
+
+// =============================================================================
+// Audit Log (For Safety-Critical Operations)
+// =============================================================================
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  action        String   // e.g., "SOS_TRIGGERED", "SOS_CANCELLED", "CONTACT_NOTIFIED"
+  resourceType  String   // e.g., "SosEvent", "Contact"
+  resourceId    String?
+  metadata      Json?
+  ipAddress     String?
+  userAgent     String?
+  correlationId String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([correlationId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

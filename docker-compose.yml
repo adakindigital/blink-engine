@@ -1,0 +1,92 @@
+services:
+  # =============================================================================
+  # PostgreSQL Database
+  # =============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: blink-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: blink
+      POSTGRES_PASSWORD: blink_dev_password
+      POSTGRES_DB: blink_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blink -d blink_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blink-network
+
+  # =============================================================================
+  # Redis (for rate limiting and caching)
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: blink-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blink-network
+
+  # =============================================================================
+  # Blink API (Development)
+  # =============================================================================
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: blink-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://blink:blink_dev_password@postgres:5432/blink_db?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: dev-access-secret-do-not-use-in-production
+      JWT_REFRESH_SECRET: dev-refresh-secret-do-not-use-in-production
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      BCRYPT_ROUNDS: 10
+      LOG_LEVEL: debug
+      LOG_FORMAT: pretty
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src:ro
+      - ./prisma:/app/prisma
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - blink-network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  blink-network:
+    driver: bridge

@@ -1,0 +1,337 @@
+{
+    "meta": {
+        "project": "blink-backend",
+        "runtime": "Node.js",
+        "framework": "Express",
+        "database": "PostgreSQL",
+        "orm": "Prisma",
+        "architecture_style": "Clean Architecture",
+        "deployment_model": "Containerized",
+        "intent": "A reliable, observable, safety-critical backend providing APIs for Blink mobile clients.",
+        "engineering_maturity": "senior-led"
+    },
+    "core_principles": {
+        "api_first": "All functionality is exposed through explicit, versioned APIs.",
+        "separation_of_concerns": "Business rules, transport, and infrastructure must never be coupled.",
+        "stateless_services": "Services must not rely on in-memory user state.",
+        "explicit_failures": "All failures must be typed, logged, and observable.",
+        "boring_over_clever": "Prefer simple, well-known patterns over abstractions.",
+        "safety_over_convenience": "Safety-related flows take priority over performance and developer convenience."
+    },
+    "layered_architecture": {
+        "api": {
+            "responsibility": "HTTP boundary and request lifecycle",
+            "contains": [
+                "Express routers",
+                "Request validators",
+                "Authentication middleware",
+                "Error mappers"
+            ],
+            "rules": [
+                "No business logic",
+                "Validate all inputs at the boundary",
+                "Translate HTTP requests into application commands",
+                "Never access the database directly"
+            ]
+        },
+        "application": {
+            "responsibility": "Use cases and orchestration",
+            "contains": [
+                "Use case handlers",
+                "Application services",
+                "Transaction orchestration"
+            ],
+            "rules": [
+                "No Express imports",
+                "No database or ORM imports",
+                "Coordinates domain logic",
+                "Returns explicit success or failure results"
+            ]
+        },
+        "domain": {
+            "responsibility": "Core business rules and safety logic",
+            "contains": [
+                "Entities",
+                "Value objects",
+                "Domain services",
+                "Domain events"
+            ],
+            "rules": [
+                "Pure JavaScript/TypeScript logic",
+                "No framework or infrastructure dependencies",
+                "Encodes safety-critical rules",
+                "Must be fully unit testable"
+            ]
+        },
+        "infrastructure": {
+            "responsibility": "External systems and technical concerns",
+            "contains": [
+                "Prisma repositories",
+                "Database clients",
+                "Notification providers",
+                "Location providers",
+                "External APIs"
+            ],
+            "rules": [
+                "Implements interfaces defined in application/domain layers",
+                "No business rules",
+                "Swappable implementations",
+                "Handles retries and timeouts"
+            ]
+        }
+    },
+    "api_design": {
+        "style": "REST",
+        "versioning": "URL-based (/v1)",
+        "rules": [
+            "Explicit resource naming",
+            "Idempotent safety endpoints",
+            "Consistent error envelopes",
+            "No silent failures"
+        ],
+        "response_envelope": {
+            "success": {
+                "data": "object | array",
+                "meta": "optional"
+            },
+            "error": {
+                "code": "string",
+                "message": "human readable",
+                "details": "optional",
+                "retryable": "boolean"
+            }
+        }
+    },
+    "authentication_and_authorization": {
+        "strategy": "JWT (short-lived access tokens)",
+        "refresh": "Rotating refresh tokens",
+        "rules": [
+            "Every endpoint authenticated by default",
+            "Explicit public endpoints only",
+            "User identity resolved at API boundary",
+            "No authorization logic in routes"
+        ]
+    },
+    "data_access": {
+        "database": "PostgreSQL",
+        "orm": "Prisma",
+        "principles": [
+            "Repositories abstract persistence",
+            "Domain models never leak Prisma types",
+            "Explicit transactions for safety flows"
+        ],
+        "rules": [
+            "No raw SQL outside repositories",
+            "Migrations are mandatory",
+            "Schema changes must be backward compatible"
+        ]
+    },
+    "safety_critical_flows": {
+        "definition": [
+            "SOS trigger",
+            "Live location sharing",
+            "Emergency contact notifications"
+        ],
+        "rules": [
+            "Must be idempotent",
+            "Must be observable end-to-end",
+            "Must fail explicitly",
+            "Must log audit events"
+        ]
+    },
+    "error_handling": {
+        "strategy": "Centralized",
+        "rules": [
+            "All errors mapped to typed domain errors",
+            "No stack traces returned to clients",
+            "All errors logged with correlation IDs"
+        ]
+    },
+    "observability": {
+        "logging": {
+            "level": "info by default",
+            "rules": [
+                "Structured logs only",
+                "No sensitive data in logs"
+            ]
+        },
+        "metrics": {
+            "required": [
+                "request latency",
+                "error rates",
+                "SOS trigger success rate"
+            ]
+        },
+        "tracing": {
+            "correlation_id": "propagated across layers"
+        }
+    },
+    "background_processing": {
+        "usage": "Minimal and explicit",
+        "rules": [
+            "No hidden background jobs",
+            "All background work must be observable",
+            "Safety-related background jobs must be retry-safe"
+        ]
+    },
+    "security": {
+        "principles": [
+            "Least privilege",
+            "Defense in depth",
+            "Secure by default"
+        ],
+        "rules": [
+            "Secrets via environment variables",
+            "No credentials in code",
+            "Rate limiting on all endpoints",
+            "Input sanitization mandatory"
+        ]
+    },
+    "testing_strategy": {
+        "unit": {
+            "targets": [
+                "Domain logic",
+                "Use cases"
+            ],
+            "rules": [
+                "No database",
+                "Fast and deterministic"
+            ]
+        },
+        "integration": {
+            "targets": [
+                "Repositories",
+                "External providers"
+            ],
+            "rules": [
+                "Real Postgres instance",
+                "No mocks for infrastructure"
+            ]
+        },
+        "api": {
+            "targets": [
+                "Critical safety endpoints"
+            ]
+        }
+    },
+    "deployment": {
+        "containerization": "Docker",
+        "rules": [
+            "Stateless containers",
+            "Environment-based configuration",
+            "Zero-downtime deploys"
+        ]
+    },
+    "anti_patterns": {
+        "forbidden": [
+            "Business logic in Express routes",
+            "Direct Prisma usage outside repositories",
+            "God services",
+            "Shared mutable state",
+            "Implicit side effects"
+        ]
+    },
+    "coding_standards": {
+        "naming": {
+            "files": "kebab-case (e.g., user.controller.ts)",
+            "classes": "PascalCase",
+            "functions": "camelCase",
+            "constants": "SCREAMING_SNAKE_CASE",
+            "interfaces": "PascalCase with I prefix optional"
+        },
+        "structure": {
+            "max_file_lines": 300,
+            "max_function_lines": 50,
+            "single_responsibility": true,
+            "one_class_per_file": true
+        },
+        "imports": {
+            "order": [
+                "node built-ins",
+                "external packages",
+                "internal modules"
+            ],
+            "prefer_named_exports": true
+        }
+    },
+    "mvc_mapping": {
+        "description": "Hybrid MVC + Clean Architecture approach for team familiarity",
+        "controllers": {
+            "location": "src/controllers/",
+            "responsibility": "Handle HTTP requests, validate input, call services, return responses",
+            "rules": [
+                "No business logic",
+                "No direct database access",
+                "Use Zod for validation"
+            ]
+        },
+        "services": {
+            "location": "src/services/",
+            "responsibility": "Business logic, orchestration, transaction management",
+            "rules": [
+                "No HTTP knowledge",
+                "No Express imports",
+                "Return Result<T, E> types"
+            ]
+        },
+        "repositories": {
+            "location": "src/repositories/",
+            "responsibility": "Data access abstraction over Prisma",
+            "rules": [
+                "No business logic",
+                "Map Prisma types to domain entities",
+                "Handle database errors"
+            ]
+        },
+        "entities": {
+            "location": "src/domain/entities/",
+            "responsibility": "Pure domain objects with validation rules",
+            "rules": [
+                "No external dependencies",
+                "Immutable where possible",
+                "Self-validating"
+            ]
+        }
+    },
+    "required_patterns": {
+        "result_type": {
+            "description": "All service methods must return Result<T, E> for explicit error handling",
+            "example": "type Result<T, E> = { success: true; data: T } | { success: false; error: E }"
+        },
+        "validation": {
+            "description": "Use Zod schemas at controller boundary for all request validation",
+            "placement": "Validate before calling any service method"
+        },
+        "dependency_injection": {
+            "description": "Constructor injection for all dependencies",
+            "benefit": "Enables unit testing with mocks"
+        },
+        "error_mapping": {
+            "description": "Map all errors to typed domain errors before returning to client",
+            "never": "Never expose internal error details or stack traces"
+        }
+    },
+    "folder_structure": {
+        "src/controllers/": "HTTP handlers grouped by domain",
+        "src/services/": "Business logic grouped by domain",
+        "src/repositories/": "Data access layer",
+        "src/domain/entities/": "Domain entities and value objects",
+        "src/domain/errors/": "Typed domain errors",
+        "src/middleware/": "Express middleware (auth, validation, error handling)",
+        "src/routes/": "Express route definitions",
+        "src/utils/": "Shared utilities (logger, result type, validators)",
+        "src/types/": "TypeScript type definitions",
+        "src/config/": "Configuration management"
+    },
+    "ai_guidance": {
+        "instruction": "Any AI-generated backend code must strictly follow this architecture.",
+        "priority_order": [
+            "Correct architecture",
+            "Safety guarantees",
+            "Clarity",
+            "Observability",
+            "Performance"
+        ],
+        "violation_policy": "If a shortcut violates architecture, do not take it."
+    }
+}
