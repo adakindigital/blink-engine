@@ -65,19 +65,38 @@ model RefreshToken {
 /// - accepted: Contact has accepted the invitation
 /// - declined: Contact has declined the invitation
 model Contact {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  phoneNumber String
-  email       String?
-  isPrimary   Boolean  @default(false)
-  status      String   @default("pending") // pending, accepted, declined
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contactUserId String? // Link to the actual User record of the contact
+  name          String
+  phoneNumber   String
+  email         String?
+  isPrimary     Boolean  @default(false)
+  status        String   @default("accepted") // Default to accepted as we now use Invite flow
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([userId])
   @@map("contacts")
+}
+
+/// Contact Invitation logic
+/// - pending: Waiting for receiver to respond
+/// - accepted: Receiver accepted, contacts created
+/// - declined: Receiver declined
+model ContactInvite {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     String   @default("pending") // pending, accepted, declined
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([receiverId]) // Receiver polls for these
+  @@index([senderId]) // Sender polls for status updates
+  @@index([status])
+  @@map("contact_invites")
 }
 
 // =============================================================================

@@ -206,3 +206,115 @@ export const setPrimaryContact = async (
         next(error);
     }
 };
+
+// =============================================================================
+// Invite Endpoints
+// =============================================================================
+
+/**
+ * POST /v1/contacts/invite
+ * Invite a user by ID
+ */
+export const createInvite = async (
+    req: Request<unknown, unknown, { receiverId: string }>,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const userId = req.userId!;
+        const { receiverId } = req.body;
+
+        if (!receiverId) {
+            throw new Error('Receiver ID is required');
+        }
+
+        const result = await contactService.createInvite(userId, receiverId);
+
+        if (!result.success) {
+            throw result.error;
+        }
+
+        res.status(201).json({ data: result.data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * GET /v1/contacts/invites
+ * Get incoming invites
+ */
+export const getIncomingInvites = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const userId = req.userId!;
+        const result = await contactService.getIncomingInvites(userId);
+
+        if (!result.success) {
+            throw result.error;
+        }
+
+        res.json({ data: result.data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * POST /v1/contacts/invites/:id/respond
+ * Accept or decline an invite
+ */
+export const respondToInvite = async (
+    req: Request<IdParam, unknown, { accept: boolean }>,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const userId = req.userId!;
+        const { id } = req.params;
+        const { accept } = req.body;
+
+        const result = await contactService.respondToInvite(userId, id, accept);
+
+        if (!result.success) {
+            throw result.error;
+        }
+
+        res.status(200).json({ success: true });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * GET /v1/contacts/invites/:id
+ * Get invite status
+ */
+export const getInvite = async (
+    req: Request<IdParam>,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const userId = req.userId!;
+        const { id } = req.params;
+        const result = await contactService.getInvite(id);
+
+        if (!result.success) {
+            throw result.error;
+        }
+
+        // Ownership check - allow sender or receiver
+        if (result.data.senderId !== userId && result.data.receiverId !== userId) {
+            // Throwing generic error for now, ideally DomainError
+            throw new Error('Unauthorized access to invite');
+        }
+
+        res.json({ data: result.data });
+    } catch (error) {
+        next(error);
+    }
+};

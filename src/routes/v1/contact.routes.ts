@@ -15,6 +15,11 @@ const router = Router();
 router.use(authenticate);
 
 // Contact CRUD
+router.post('/invite', contactController.createInvite);
+router.get('/invites', contactController.getIncomingInvites);
+router.get('/invites/:id', validateParams(idParamSchema), contactController.getInvite);
+router.post('/invites/:id/respond', validateParams(idParamSchema), contactController.respondToInvite);
+
 router.get('/', contactController.listContacts);
 router.post('/', validateBody(createContactSchema), contactController.createContact);
 router.get('/:id', validateParams(idParamSchema), contactController.getContact);

@@ -4,8 +4,9 @@
 // Emergency contact business logic
 
 import { Result, ok, fail } from '../utils/result.js';
-import { NotFoundError, DomainError } from '../domain/errors/domain.errors.js';
-import { contactRepository, Contact } from '../repositories/contact.repository.js';
+import { NotFoundError, ConflictError, ValidationError, UnauthorizedError, DomainError } from '../domain/errors/domain.errors.js';
+import { contactRepository, Contact, ContactInvite } from '../repositories/contact.repository.js';
+import { userRepository } from '../repositories/user.repository.js';
 
 // =============================================================================
 // Types
@@ -139,6 +140,125 @@ class ContactService {
      */
     async getPrimaryContacts(userId: string): Promise<Contact[]> {
         return contactRepository.findPrimaryByUserId(userId);
+    }
+
+    // =============================================================================
+    // Invite Logic
+    // =============================================================================
+
+    /**
+     * Create a new invite
+     */
+    async createInvite(senderId: string, receiverId: string): Promise<Result<{ inviteId: string; status: string }, DomainError>> {
+        if (senderId === receiverId) {
+            return fail(new ValidationError('Cannot invite yourself'));
+        }
+
+        // Check if already friends
+        const existingContacts = await contactRepository.findAllByUserId(senderId);
+        const alreadyFriend = existingContacts.some(c => c.contactUserId === receiverId);
+        if (alreadyFriend) {
+            return fail(new ConflictError('User is already in your circle'));
+        }
+
+        // Check if existing pending invite
+        const existingInvite = await contactRepository.findExistingInvite(senderId, receiverId);
+        if (existingInvite) {
+            return ok({ inviteId: existingInvite.id, status: existingInvite.status });
+        }
+
+        const invite = await contactRepository.createInvite(senderId, receiverId);
+        return ok({ inviteId: invite.id, status: invite.status });
+    }
+
+    /**
+     * Get invite by ID
+     */
+    async getInvite(inviteId: string): Promise<Result<ContactInvite, DomainError>> {
+        const invite = await contactRepository.findInviteById(inviteId);
+        if (!invite) {
+            return fail(new NotFoundError('Invite', inviteId));
+        }
+        return ok(invite);
+    }
+
+    /**
+     * Get incoming invites
+     */
+    async getIncomingInvites(userId: string): Promise<Result<any[], DomainError>> { // Return enriched invites
+        const invites = await contactRepository.findPendingInvitesByReceiverId(userId);
+
+        // Enrich with sender details
+        // Note: In a real app we might want to do this efficiently with a join or simpler query
+        const enriched = await Promise.all(invites.map(async (inv) => {
+            const sender = await userRepository.findById(inv.senderId);
+            return {
+                id: inv.id,
+                sender: sender ? {
+                    name: sender.name,
+                    surname: sender.surname,
+                    profileImageUrl: sender.profileImageUrl
+                } : null,
+                createdAt: inv.createdAt
+            };
+        }));
+
+        return ok(enriched.filter(e => e.sender !== null));
+    }
+
+    /**
+     * Respond to an invite
+     */
+    async respondToInvite(userId: string, inviteId: string, accept: boolean): Promise<Result<void, DomainError>> {
+        const invite = await contactRepository.findInviteById(inviteId);
+        if (!invite) {
+            return fail(new NotFoundError('Invite', inviteId));
+        }
+
+        if (invite.receiverId !== userId) {
+            return fail(new UnauthorizedError('Not authorized to respond to this invite'));
+        }
+
+        if (invite.status !== 'pending') {
+            return fail(new ValidationError('Invite is not pending'));
+        }
+
+        if (!accept) {
+            await contactRepository.updateInviteStatus(inviteId, 'declined');
+            return ok(undefined);
+        }
+
+        // Accepted logic
+        const sender = await userRepository.findById(invite.senderId);
+        const receiver = await userRepository.findById(invite.receiverId);
+
+        if (!sender || !receiver) {
+            return fail(new NotFoundError('User'));
+        }
+
+        // Create Mutual Contacts
+        // Receiver adds Sender
+        await contactRepository.create({
+            userId: receiver.id,
+            contactUserId: sender.id,
+            name: `${sender.name} ${sender.surname}`.trim(),
+            phoneNumber: sender.phoneNumber || '',
+            email: sender.email,
+            isPrimary: false,
+        });
+
+        // Sender adds Receiver
+        await contactRepository.create({
+            userId: sender.id,
+            contactUserId: receiver.id,
+            name: `${receiver.name} ${receiver.surname}`.trim(),
+            phoneNumber: receiver.phoneNumber || '',
+            email: receiver.email,
+            isPrimary: false,
+        });
+
+        await contactRepository.updateInviteStatus(inviteId, 'accepted');
+        return ok(undefined);
     }
 }
 
