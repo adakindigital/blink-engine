@@ -102,6 +102,18 @@ class ContactService {
             return fail(new NotFoundError('Contact', contactId));
         }
 
+        // Check for reciprocal contact to notify
+        if (contact.contactUserId) {
+            // Find the other user's contact entry that points to this user
+            const otherUserContacts = await contactRepository.findAllByUserId(contact.contactUserId);
+            const reciprocalContact = otherUserContacts.find(c => c.contactUserId === userId);
+
+            if (reciprocalContact) {
+                // Mark as disconnected so they get notified
+                await contactRepository.update(reciprocalContact.id, { status: 'disconnected' });
+            }
+        }
+
         await contactRepository.delete(contactId);
 
         // If deleted contact was primary, set another as primary
