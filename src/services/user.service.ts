@@ -16,6 +16,7 @@ interface UpdateProfileInput {
     name?: string;
     surname?: string;
     phoneNumber?: string;
+    isTracking?: boolean;
 }
 
 interface UploadImageResult {

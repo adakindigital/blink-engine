@@ -27,6 +27,7 @@ model User {
   isPremium        Boolean   @default(false)
   isPhoneValidated Boolean   @default(false)
   isEmailValidated Boolean   @default(false)
+  isTracking       Boolean   @default(false) // Global "Live Location" switch
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -175,4 +176,22 @@ model AuditLog {
   @@index([correlationId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// =============================================================================
+// Security Network (Placeholder / Future)
+// =============================================================================
+
+model SecurityNode {
+  id          String   @id @default(cuid())
+  name        String
+  company     String
+  latitude    Float
+  longitude   Float
+  status      String   // e.g., "patrolling", "active", "dispatched"
+  eta         String?  // Mock ETA for now
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("security_nodes")
 }

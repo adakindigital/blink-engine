@@ -16,6 +16,7 @@ export const updateProfileSchema = z.object({
     name: z.string().min(1).optional(),
     surname: z.string().min(1).optional(),
     phoneNumber: z.string().optional(),
+    isTracking: z.boolean().optional(),
 });
 
 // =============================================================================
@@ -90,7 +91,7 @@ export const uploadProfileImage = async (
 ): Promise<void> => {
     try {
         const userId = req.userId!;
-        const file = req.file;
+        const file = (req as any).file;
 
         if (!file) {
             res.status(400).json({

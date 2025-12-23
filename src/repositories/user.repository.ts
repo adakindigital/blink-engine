@@ -22,6 +22,7 @@ export interface UserWithoutPassword {
     isPremium: boolean;
     isPhoneValidated: boolean;
     isEmailValidated: boolean;
+    isTracking?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -45,6 +46,7 @@ interface UpdateUserInput {
     profileImageUrl?: string;
     isPhoneValidated?: boolean;
     isEmailValidated?: boolean;
+    isTracking?: boolean;
 }
 
 // =============================================================================
@@ -69,6 +71,7 @@ class UserRepository {
                     isPremium: true,
                     isPhoneValidated: true,
                     isEmailValidated: true,
+                    isTracking: true,
                     createdAt: true,
                     updatedAt: true,
                 },
@@ -97,6 +100,7 @@ class UserRepository {
                     isPremium: true,
                     isPhoneValidated: true,
                     isEmailValidated: true,
+                    isTracking: true,
                     createdAt: true,
                     updatedAt: true,
                 },
@@ -139,6 +143,7 @@ class UserRepository {
                 isPremium: true,
                 isPhoneValidated: true,
                 isEmailValidated: true,
+                isTracking: true,
                 createdAt: true,
                 updatedAt: true,
             },
@@ -163,6 +168,7 @@ class UserRepository {
                 isPremium: true,
                 isPhoneValidated: true,
                 isEmailValidated: true,
+                isTracking: true,
                 createdAt: true,
                 updatedAt: true,
             },

@@ -124,8 +124,17 @@ const startServer = async (): Promise<void> => {
 
         // Create and start Express app
         const app = createApp();
-        const server = app.listen(config.server.port, config.server.host, () => {
-            logger.info(`🚀 Blink Engine started`, {
+
+        // Create HTTP server (required for Socket.io)
+        const { createServer } = await import('http');
+        const httpServer = createServer(app);
+
+        // Initialize Socket Service
+        const { socketService } = await import('./services/socket.service.js');
+        socketService.initialize(httpServer, config.cors.origins);
+
+        const server = httpServer.listen(config.server.port, config.server.host, () => {
+            logger.info(`🚀 Blink Engine started (HTTP + WebSocket)`, {
                 port: config.server.port,
                 env: config.env,
                 host: config.server.host,
