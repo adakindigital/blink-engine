@@ -24,5 +24,6 @@ router.post('/resolve', sosController.resolveSos);
 // SOS status
 router.get('/active', sosController.getActiveSos);
 router.get('/history', sosController.getSosHistory);
+router.get('/circle-status', sosController.getCircleSosStatus);
 
 export { router as sosRoutes };

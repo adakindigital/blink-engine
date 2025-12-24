@@ -152,6 +152,19 @@ class SosRepository {
             },
         });
     }
+
+    /**
+     * Find active SOS events for multiple users
+     * Used for checking circle (contacts) SOS status
+     */
+    async findActiveByUserIds(userIds: string[]): Promise<SosEvent[]> {
+        return prisma.sosEvent.findMany({
+            where: {
+                userId: { in: userIds },
+                status: 'active',
+            },
+        });
+    }
 }
 
 export const sosRepository = new SosRepository();

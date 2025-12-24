@@ -100,6 +100,24 @@ model ContactInvite {
   @@map("contact_invites")
 }
 
+/// Short-lived invite codes for secure contact adding
+/// - Users generate a 6-character code that expires after 5 minutes
+/// - Other users can scan the QR code or enter the code manually
+/// - Once used, the code is marked as used and cannot be reused
+model InviteCode {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([code])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("invite_codes")
+}
+
 // =============================================================================
 // Location Tracking
 // =============================================================================

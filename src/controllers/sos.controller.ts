@@ -185,3 +185,27 @@ export const getSosHistory = async (
         next(error);
     }
 };
+
+/**
+ * GET /v1/sos/circle-status
+ * Get active SOS events from the user's trusted circle (emergency contacts)
+ * Returns a list of contacts who have active SOS events
+ */
+export const getCircleSosStatus = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const userId = req.userId!;
+        const result = await sosService.getCircleSosStatus(userId);
+
+        if (!result.success) {
+            throw result.error;
+        }
+
+        res.json({ data: result.data });
+    } catch (error) {
+        next(error);
+    }
+};

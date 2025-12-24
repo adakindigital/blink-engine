@@ -7,6 +7,7 @@ import { Result, ok, fail } from '../utils/result.js';
 import { NotFoundError, ConflictError, ValidationError, UnauthorizedError, DomainError } from '../domain/errors/domain.errors.js';
 import { contactRepository, Contact, ContactInvite } from '../repositories/contact.repository.js';
 import { userRepository } from '../repositories/user.repository.js';
+import { inviteCodeRepository } from '../repositories/invite-code.repository.js';
 
 // =============================================================================
 // Types
@@ -23,6 +24,11 @@ interface UpdateContactInput {
     name?: string;
     phoneNumber?: string;
     email?: string;
+}
+
+interface InviteCodeResponse {
+    code: string;
+    expiresAt: Date;
 }
 
 // =============================================================================
@@ -155,6 +161,69 @@ class ContactService {
     }
 
     // =============================================================================
+    // Invite Codes (Short-lived, secure)
+    // =============================================================================
+
+    /**
+     * Generate a new invite code for the user
+     * Invalidates any existing codes before generating a new one
+     */
+    async generateInviteCode(userId: string): Promise<Result<InviteCodeResponse, DomainError>> {
+        // Invalidate existing codes for this user
+        await inviteCodeRepository.invalidateAllForUser(userId);
+
+        // Generate new code (valid for 5 minutes)
+        const inviteCode = await inviteCodeRepository.create(userId, 5);
+
+        return ok({
+            code: inviteCode.code,
+            expiresAt: inviteCode.expiresAt,
+        });
+    }
+
+    /**
+     * Get or create an active invite code for the user
+     * Returns existing valid code if available, otherwise generates a new one
+     */
+    async getOrCreateInviteCode(userId: string): Promise<Result<InviteCodeResponse, DomainError>> {
+        // Check for existing valid code
+        const existing = await inviteCodeRepository.getActiveForUser(userId);
+        if (existing) {
+            return ok({
+                code: existing.code,
+                expiresAt: existing.expiresAt,
+            });
+        }
+
+        // Generate new code
+        return this.generateInviteCode(userId);
+    }
+
+    /**
+     * Create an invite using an invite code
+     * Resolves the code to a user ID and creates the invite
+     */
+    async createInviteByCode(senderId: string, inviteCode: string): Promise<Result<{ inviteId: string; status: string }, DomainError>> {
+        // Look up the invite code
+        const codeRecord = await inviteCodeRepository.findValidByCode(inviteCode);
+        if (!codeRecord) {
+            return fail(new ValidationError('Invalid or expired invite code'));
+        }
+
+        const receiverId = codeRecord.userId;
+
+        // Use the existing createInvite logic
+        const result = await this.createInvite(senderId, receiverId);
+
+        // Mark the code as used only if invite was successful
+        if (result.success) {
+            await inviteCodeRepository.markUsed(codeRecord.id);
+        }
+
+        return result;
+    }
+
+    // =============================================================================
     // Invite Logic
     // =============================================================================
 
@@ -272,6 +341,15 @@ class ContactService {
         await contactRepository.updateInviteStatus(inviteId, 'accepted');
         return ok(undefined);
     }
+
+    /**
+     * Get contacts that have a linked user account (for circle status checks)
+     */
+    async getContactsWithUser(userId: string): Promise<Contact[]> {
+        const contacts = await contactRepository.findAllByUserId(userId);
+        return contacts.filter(c => c.contactUserId !== null && c.status === 'accepted');
+    }
 }
 
 export const contactService = new ContactService();
+

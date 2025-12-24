@@ -185,6 +185,55 @@ class SosService {
         const history = await sosRepository.findAllByUserId(userId);
         return ok(history);
     }
+
+    /**
+     * Get active SOS events from the user's trusted circle
+     * Returns a list of contacts who have active SOS
+     */
+    async getCircleSosStatus(userId: string): Promise<Result<CircleSosStatus[], DomainError>> {
+        // Get user's accepted contacts that have a linked user
+        const contacts = await contactService.getContactsWithUser(userId);
+
+        if (contacts.length === 0) {
+            return ok([]);
+        }
+
+        // Get contact user IDs
+        const contactUserIds = contacts
+            .filter(c => c.contactUserId)
+            .map(c => c.contactUserId as string);
+
+        if (contactUserIds.length === 0) {
+            return ok([]);
+        }
+
+        // Check for active SOS events for these users
+        const activeSosEvents = await sosRepository.findActiveByUserIds(contactUserIds);
+
+        // Map to circle status with contact info
+        const circleStatus: CircleSosStatus[] = activeSosEvents.map(sos => {
+            const contact = contacts.find(c => c.contactUserId === sos.userId);
+            return {
+                contactUserId: sos.userId,
+                contactName: contact?.name ?? 'Unknown Contact',
+                isActive: true,
+                triggeredAt: sos.triggeredAt,
+                latitude: sos.latitude,
+                longitude: sos.longitude,
+            };
+        });
+
+        return ok(circleStatus);
+    }
+}
+
+export interface CircleSosStatus {
+    contactUserId: string;
+    contactName: string;
+    isActive: boolean;
+    triggeredAt: Date;
+    latitude: number;
+    longitude: number;
 }
 
 export const sosService = new SosService();

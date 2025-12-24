@@ -212,23 +212,85 @@ export const setPrimaryContact = async (
 // =============================================================================
 
 /**
- * POST /v1/contacts/invite
- * Invite a user by ID
+ * POST /v1/contacts/invite-code
+ * Generate a short-lived invite code for secure contact adding
  */
-export const createInvite = async (
-    req: Request<unknown, unknown, { receiverId: string }>,
+export const generateInviteCode = async (
+    req: Request,
     res: Response,
     next: NextFunction
 ): Promise<void> => {
     try {
         const userId = req.userId!;
-        const { receiverId } = req.body;
+        const result = await contactService.getOrCreateInviteCode(userId);
 
-        if (!receiverId) {
-            throw new Error('Receiver ID is required');
+        if (!result.success) {
+            throw result.error;
         }
 
-        const result = await contactService.createInvite(userId, receiverId);
+        logger.info('Invite code generated', {
+            correlationId: req.correlationId,
+            userId,
+        });
+
+        res.status(200).json({ data: result.data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * POST /v1/contacts/invite-code/refresh
+ * Force generate a new invite code (invalidates existing)
+ */
+export const refreshInviteCode = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const userId = req.userId!;
+        const result = await contactService.generateInviteCode(userId);
+
+        if (!result.success) {
+            throw result.error;
+        }
+
+        logger.info('Invite code refreshed', {
+            correlationId: req.correlationId,
+            userId,
+        });
+
+        res.status(200).json({ data: result.data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * POST /v1/contacts/invite
+ * Invite a user by ID or invite code
+ */
+export const createInvite = async (
+    req: Request<unknown, unknown, { receiverId?: string; inviteCode?: string }>,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const userId = req.userId!;
+        const { receiverId, inviteCode } = req.body;
+
+        let result;
+
+        if (inviteCode) {
+            // Use invite code to create invite
+            result = await contactService.createInviteByCode(userId, inviteCode);
+        } else if (receiverId) {
+            // Use receiver ID directly (legacy/QR scan)
+            result = await contactService.createInvite(userId, receiverId);
+        } else {
+            throw new Error('Either receiverId or inviteCode is required');
+        }
 
         if (!result.success) {
             throw result.error;
@@ -239,6 +301,7 @@ export const createInvite = async (
         next(error);
     }
 };
+
 
 /**
  * GET /v1/contacts/invites
