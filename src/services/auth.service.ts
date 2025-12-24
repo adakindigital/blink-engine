@@ -54,8 +54,11 @@ class AuthService {
      * Register a new user
      */
     async register(input: RegisterInput): Promise<Result<AuthResponse, DomainError>> {
+        // Normalize email to lowercase
+        const email = input.email.toLowerCase();
+
         // Check if email already exists
-        const existingUser = await userRepository.findByEmail(input.email);
+        const existingUser = await userRepository.findByEmail(email);
         if (existingUser) {
             return fail(new EmailAlreadyExistsError());
         }
@@ -65,7 +68,7 @@ class AuthService {
 
         // Create user
         const user = await userRepository.create({
-            email: input.email,
+            email,
             passwordHash,
             name: input.name,
             surname: input.surname,
@@ -85,8 +88,11 @@ class AuthService {
      * Authenticate user with email and password
      */
     async login(email: string, password: string): Promise<Result<AuthResponse, DomainError>> {
+        // Normalize email to lowercase
+        const normalizedEmail = email.toLowerCase();
+
         // Find user by email
-        const user = await userRepository.findByEmailWithPassword(email);
+        const user = await userRepository.findByEmailWithPassword(normalizedEmail);
         if (!user) {
             return fail(new InvalidCredentialsError());
         }

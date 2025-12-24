@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { SecurityNodeController } from '../../controllers/security-node.controller.js';
 import { MapController } from '../../controllers/map.controller.js';
-// import { authenticate } from '../../middleware/auth.middleware.js'; // Assuming auth middleware exists
+import { authenticate } from '../../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -11,6 +11,6 @@ router.get('/security-nodes', SecurityNodeController.getNearby);
 
 // Retrieve contacts with location
 // GET /api/v1/maps/contacts
-router.get('/contacts', MapController.getContacts);
+router.get('/contacts', authenticate, MapController.getContacts);
 
 export const mapsRoutes = router;

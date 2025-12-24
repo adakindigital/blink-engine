@@ -13,6 +13,8 @@ import { sosRepository, SosEvent } from '../repositories/sos.repository.js';
 import { auditRepository } from '../repositories/audit.repository.js';
 import { contactService } from './contact.service.js';
 import { logger } from '../utils/logger.js';
+import { socketService } from './socket.service.js';
+
 
 // =============================================================================
 // Types
@@ -107,6 +109,32 @@ class SosService {
         // TODO: Trigger actual notifications (push, SMS, etc.)
         // This would be handled by a notification service
 
+        // Notify via sockets
+        try {
+            // Get all contacts who are Blink users that follow this user
+            // We notify people who have this user as a contact (Reciprocal isn't strictly required, 
+            // but usually you notify your emergency contacts)
+            // The method getContactsWithUser(userId) gets contacts OF the user.
+            // We want to notify those contacts.
+            const contactsWithUser = await contactService.getContactsWithUser(userId);
+            const recipientIds = contactsWithUser
+                .filter(c => c.contactUserId)
+                .map(c => c.contactUserId!);
+
+            if (recipientIds.length > 0) {
+                socketService.emitToUsers(recipientIds, 'sos:alert', {
+                    userId,
+                    type: 'start', // SOS started
+                    latitude: input.latitude,
+                    longitude: input.longitude,
+                    triggeredAt: sosEvent.triggeredAt,
+                });
+            }
+        } catch (error) {
+            logger.error('Failed to emit SOS socket event', error);
+        }
+
+
         return ok(sosEvent);
     }
 
@@ -125,6 +153,26 @@ class SosService {
 
         // Update SOS event
         const cancelledSos = await sosRepository.cancel(activeSos.id, reason);
+
+        // Notify via sockets
+        try {
+            const contactsWithUser = await contactService.getContactsWithUser(userId);
+            const recipientIds = contactsWithUser
+                .filter(c => c.contactUserId)
+                .map(c => c.contactUserId!);
+
+            if (recipientIds.length > 0) {
+                socketService.emitToUsers(recipientIds, 'sos:alert', {
+                    userId,
+                    type: 'end', // SOS ended
+                    status: 'cancelled',
+                    reason,
+                });
+            }
+        } catch (error) {
+            logger.error('Failed to emit SOS cancel socket event', error);
+        }
+
 
         // Record audit log
         await auditRepository.create({
@@ -155,6 +203,25 @@ class SosService {
 
         // Update SOS event
         const resolvedSos = await sosRepository.resolve(activeSos.id);
+
+        // Notify via sockets
+        try {
+            const contactsWithUser = await contactService.getContactsWithUser(userId);
+            const recipientIds = contactsWithUser
+                .filter(c => c.contactUserId)
+                .map(c => c.contactUserId!);
+
+            if (recipientIds.length > 0) {
+                socketService.emitToUsers(recipientIds, 'sos:alert', {
+                    userId,
+                    type: 'end', // SOS ended
+                    status: 'resolved',
+                });
+            }
+        } catch (error) {
+            logger.error('Failed to emit SOS resolve socket event', error);
+        }
+
 
         // Record audit log
         await auditRepository.create({
