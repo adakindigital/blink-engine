@@ -213,3 +213,18 @@ model SecurityNode {
 
   @@map("security_nodes")
 }
+
+// =============================================================================
+// Waitlist (Engagement)
+// =============================================================================
+
+model WaitlistEntry {
+  email         String   @id
+  name          String?
+  suburb        String?
+  referralCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("waitlist_entries")
+}

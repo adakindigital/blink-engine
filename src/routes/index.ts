@@ -10,6 +10,7 @@ import { contactRoutes } from './v1/contact.routes.js';
 import { locationRoutes } from './v1/location.routes.js';
 import { sosRoutes } from './v1/sos.routes.js';
 import { mapsRoutes } from './v1/maps.routes.js';
+import { waitlistRoutes } from './v1/waitlist.routes.js';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/v1/contacts', contactRoutes);
 router.use('/v1/locations', locationRoutes);
 router.use('/v1/sos', sosRoutes);
 router.use('/v1/maps', mapsRoutes);
+router.use('/v1/waitlist', waitlistRoutes);
 
 export { router as apiRoutes };
