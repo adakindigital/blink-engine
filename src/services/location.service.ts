@@ -10,7 +10,7 @@ import { locationRepository, Location } from '../repositories/location.repositor
 import { userRepository } from '../repositories/user.repository.js';
 import { contactRepository } from '../repositories/contact.repository.js';
 // Placeholder for SocketService until implemented
-import { socketService } from './socket.service';
+import { socketService } from './socket.service.js';
 
 // =============================================================================
 // Types
