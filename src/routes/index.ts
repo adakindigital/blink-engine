@@ -11,6 +11,8 @@ import { locationRoutes } from './v1/location.routes.js';
 import { sosRoutes } from './v1/sos.routes.js';
 import { mapsRoutes } from './v1/maps.routes.js';
 import { waitlistRoutes } from './v1/waitlist.routes.js';
+import { securityRoutes } from './security.routes.js';
+import { adminRoutes } from './admin.routes.js';
 
 const router = Router();
 
@@ -22,5 +24,7 @@ router.use('/v1/locations', locationRoutes);
 router.use('/v1/sos', sosRoutes);
 router.use('/v1/maps', mapsRoutes);
 router.use('/v1/waitlist', waitlistRoutes);
+router.use('/v1/security', securityRoutes);
+router.use('/v1/admin', adminRoutes);
 
 export { router as apiRoutes };

@@ -36,6 +36,8 @@ model User {
   contacts      Contact[]
   locations     Location[]
   sosEvents     SosEvent[]
+  securityPersonnel SecurityPersonnel?
+  missionFeedback MissionFeedback[]
 
   @@index([email])
   @@map("users")
@@ -163,8 +165,14 @@ model SosEvent {
   notifiedContacts Json?     // Array of contact IDs that were notified
   auditLog         Json?     // Audit trail of all actions
   idempotencyKey   String?   @unique // For idempotent triggers
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  securityResponderId String?
+  securityResponder   SecurityPersonnel? @relation(fields: [securityResponderId], references: [id])
+  securityStatus      String?            // pending, dispatched, on_scene, resolved
+  securityNote        String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  missionFeedback      MissionFeedback?
 
   @@index([userId])
   @@index([status])
@@ -200,18 +208,62 @@ model AuditLog {
 // Security Network (Placeholder / Future)
 // =============================================================================
 
-model SecurityNode {
+model SecurityCompany {
   id          String   @id @default(cuid())
   name        String
-  company     String
-  latitude    Float
-  longitude   Float
-  status      String   // e.g., "patrolling", "active", "dispatched"
-  eta         String?  // Mock ETA for now
+  contactName String
+  phoneNumber String
+  email       String
+  address     String?
+  logoUrl     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@map("security_nodes")
+  personnel SecurityPersonnel[]
+
+  @@map("security_companies")
+}
+
+model SecurityPersonnel {
+  id                String          @id @default(cuid())
+  userId            String          @unique // Links to the Auth User
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId         String
+  company           SecurityCompany @relation(fields: [companyId], references: [id])
+  badgeNumber       String?
+  isOnline          Boolean         @default(false)
+  currentLatitude   Float?
+  currentLongitude  Float?
+  lastLocationUpdate DateTime?
+  status            String          @default("offline") // offline, available, busy
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  assignedSosEvents SosEvent[]
+
+  @@index([companyId])
+  @@index([status])
+  @@map("security_personnel")
+}
+
+// =============================================================================
+// Feedback & Surveys
+// =============================================================================
+
+model MissionFeedback {
+  id            String    @id @default(cuid())
+  sosEventId    String    @unique
+  sosEvent      SosEvent  @relation(fields: [sosEventId], references: [id])
+  fromUserId    String
+  fromUser      User      @relation(fields: [fromUserId], references: [id])
+  rating        Int       // 1-5 Star Rating
+  comment       String?
+  type          String    // "security" (from responder) or "client" (from victim)
+  createdAt     DateTime  @default(now())
+
+  @@index([sosEventId])
+  @@index([type])
+  @@map("mission_feedback")
 }
 
 // =============================================================================

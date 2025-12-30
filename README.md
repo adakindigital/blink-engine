@@ -117,6 +117,15 @@ Authorization: Bearer <access_token>
 | GET | `/sos/active` | Get active SOS |
 | GET | `/sos/history` | Get SOS history |
 
+#### Admin & Security Management
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/admin/security-personnel` | Register new security personnel & company |
+| GET | `/security/alerts` | Get nearby alerts (Security only) |
+| POST | `/security/alerts/:id/claim` | Claim an alert (Security only) |
+| POST | `/security/location` | Update personnel location (Security only) |
+
 ### Response Format
 
 **Success:**
@@ -206,6 +215,7 @@ npm run db:studio
 | `npm test` | Run tests |
 | `npm run docker:dev` | Start Docker services |
 | `npm run docker:down` | Stop Docker services |
+| `npx tsx scripts/add-security-personnel.ts` | CLI tool to add security personnel |
 
 ## 🔐 Security
 
